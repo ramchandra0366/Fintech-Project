@@ -1,18 +1,20 @@
+
 # NovaBank — Data Engineering Architecture
 
-This document describes the implemented NovaBank data engineering workflows.
+## Architecture Diagram
 
 ```mermaid
 flowchart TD
-    A["Python Synthetic Data Generator - 132,700 records"]
-    B["Five Raw CSV Datasets"]
-    C["SQL Server 2025 - Docker on MacBook"]
-    D["Azure ADLS Gen2 - stnovabankdev01 - bronze/raw/"]
-    E["Local PySpark - Bronze Parquet"]
-    F["Local PySpark - Silver Cleaned Data"]
-    G["Local PySpark - Gold Business Reports"]
-    H["Data Quality Checks"]
-    I["GitHub - Code and Documentation"]
+    A["Python Data Generator"]
+    B["132,700 Synthetic Banking Records"]
+    C["SQL Server 2025"]
+    D["Azure ADLS Gen2 - Raw CSV Storage"]
+    E["Local PySpark Bronze Layer"]
+    F["Local PySpark Silver Layer"]
+    G["Local PySpark Gold Layer"]
+    H["Data Quality Validation"]
+    I["Financial Reporting Datasets"]
+
     A --> B
     B --> C
     B --> D
@@ -20,15 +22,22 @@ flowchart TD
     E --> F
     F --> G
     G --> H
-    H -.-> I
+    G --> I
 ```
+
+## Technologies
+
+- Python
+- SQL Server 2025
+- Azure Data Lake Storage Gen2
+- Apache PySpark
+- Parquet
+- Git and GitHub
 
 ## Implementation Notes
 
-- Python generates five synthetic banking CSV datasets totaling 132,700 records.
-- SQL Server 2025 supports relational queries, fraud analysis, and reconciliation.
-- Azure Data Lake Storage Gen2 stores uploaded raw CSV files in the Bronze container.
-- The current PySpark pipeline runs locally and reads CSV files from `data/raw/`, not directly from Azure.
-- `Spark/run_pipeline.py` runs the Bronze, Silver, Gold, and data quality stages.
-- Gold reports include daily transactions, transaction summaries, payment summaries, and high-value transaction review indicators.
-- GitHub stores project code and documentation, not generated datasets.
+The Azure storage workflow and local PySpark pipeline
+are separate in the current implementation.
+
+The local pipeline reads CSV files from data/raw/
+and produces Bronze, Silver, and Gold Parquet datasets.
