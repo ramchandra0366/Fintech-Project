@@ -1,3 +1,85 @@
+# NovaBank — Azure FinTech Data Engineering Project
+
+## Project Overview
+
+NovaBank is a fictional banking data engineering project demonstrating an end-to-end data pipeline using Python, SQL Server 2025, Azure Data Lake Storage Gen2, and Apache PySpark.
+
+The project processes **132,700 synthetic banking records** across five datasets:
+
+| Dataset | Records |
+|---|---:|
+| Customers | 1,000 |
+| Accounts | 1,500 |
+| Merchants | 200 |
+| Transactions | 100,000 |
+| Payments | 30,000 |
+| **Total** | **132,700** |
+
+## Data Pipeline Architecture
+
+```text
+Synthetic Banking Data (Python)
+              |
+              v
+        CSV Raw Data
+              |
+              +----> SQL Server 2025
+              |      Data quality, fraud analysis,
+              |      and financial reconciliation
+              |
+              +----> Azure Data Lake Storage Gen2
+              |      Bronze container (raw CSV)
+              |
+              v
+       Local Apache PySpark
+              |
+              v
+       Bronze Layer (Parquet)
+              |
+              v
+       Silver Layer (Cleaned Data)
+              |
+              v
+       Gold Layer (Business KPIs)
+              |
+              v
+       Data Quality Validation
+```
+
+*The Azure raw-data upload and local PySpark processing are separate parts of this project. The local Spark pipeline currently reads files from the project directory.*
+
+## Key Features
+
+- Synthetic banking data generation using Python
+- SQL Server data ingestion and SQL-based analysis
+- Azure Data Lake Storage Gen2 integration
+- Bronze, Silver, and Gold data transformations using PySpark
+- Transaction and payment reporting
+- High-value transaction review indicators
+- Automated pipeline execution using `Spark/run_pipeline.py`
+- Data quality and reconciliation checks
+
+## Pipeline Execution
+
+Run the complete local pipeline from the project root:
+
+```bash
+./.venv-spark/bin/python Spark/run_pipeline.py
+```
+
+The pipeline runs Bronze ingestion, Silver transformations, Gold reporting, and data quality checks.
+
+**Validation result:** All checks passed in the completed local pipeline run.
+
+## Project Status
+
+**Completed:** Local Bronze–Silver–Gold pipeline, SQL analysis, Azure raw-data storage integration, automated execution, and validation.
+
+**Future enhancements:** Cloud orchestration, monitoring, and Power BI dashboards.
+
+
+
+
 Enterprise Banking Data Engineering Platform — NovaBank
 
 End-to-End Azure FinTech Data Engineering Portfolio Project
