@@ -1,414 +1,142 @@
-# NovaBank — Azure FinTech Data Engineering Project
+NovaBank — Azure FinTech Data Engineering Project
+A hands-on banking data engineering project built with Python, SQL Server, Azure Data Factory, Azure Data Lake Storage, and Azure Databricks.
+Project Overview
+I built NovaBank to practice the steps involved in a banking data engineering project: generating data, loading it into SQL Server, moving files into Azure, transforming transactions with PySpark, and building a dashboard from the results.
 
-## Project Overview
+The project uses 132,700 generated records across five related banking datasets. All data is synthetic.
+Dataset	Records
+Customers	1,000
+Accounts	1,500
+Merchants	200
+Transactions	100,000
+Payments	30,000
+Total	132,700
 
-NovaBank is a fictional banking data engineering project demonstrating an end-to-end data pipeline using Python, SQL Server 2025, Azure Data Lake Storage Gen2, and Apache PySpark.
 
-The project processes **132,700 synthetic banking records** across five datasets:
+Architecture
+I worked on two parts of the project: a local Python, SQL Server, and PySpark pipeline, and a cloud workflow in Azure. They are separate implementations rather than one fully automated pipeline.
+                   Python Synthetic Data Generator
+                                |
+                     Five Banking CSV Datasets
+                                |
+                +---------------+----------------+
+                |                                |
+                v                                v
+       SQL Server 2025 (Docker)         Azure Data Lake Storage Gen2
+       NovaBankDB                       bronze/raw/*.csv
+       - Relational tables                      |
+       - SQL analysis                  Azure Data Factory
+       - Fraud indicators              (validated copy pipeline)
+       - Reconciliation                         |
+                |                     bronze/adf-output/transactions.csv
+                |                                |
+                |                   Azure Databricks (separate processing)
+                |                   Bronze -> Silver -> Gold Delta tables
+                |                                |
+                |                       Databricks AI/BI Dashboard
+                |                       - Transaction KPIs
+                |                       - Daily trends
+                |                       - Status breakdown
+                |
+                +-- Local PySpark workflow (from local project files)
+                    Bronze -> Silver -> Gold -> Data quality checks
+I tested the Azure Data Factory copy pipeline and the Databricks transformations separately. Connecting them into one scheduled workflow would be a future improvement.
 
-| Dataset | Records |
-|---|---:|
-| Customers | 1,000 |
-| Accounts | 1,500 |
-| Merchants | 200 |
-| Transactions | 100,000 |
-| Payments | 30,000 |
-| **Total** | **132,700** |
+See [`docs/architecture.md`](docs/architecture.md) for additional architecture notes.
+Technology Stack
+Technology	Implementation
+Python	Synthetic banking data generation and loading scripts
+SQL Server 2025 + Docker	Local NovaBankDB, SQL analysis and reconciliation
+Apache PySpark	Local Medallion pipeline and Azure Databricks transformations
+Azure Data Lake Storage Gen2	Cloud raw data and ADF copy output
+Azure Data Factory	Validated cloud data-copy pipeline
+Azure Databricks	Bronze, Silver and Gold data processing
+Delta Lake + Unity Catalog	Managed analytics tables and data governance
+Databricks AI/BI Dashboards	Published banking analytics dashboard
+GitHub Actions	Automated Python test workflow
+VS Code + GitHub	Development, version control and documentation
 
-## Data Pipeline Architecture
 
-```text
-Synthetic Banking Data (Python)
-              |
-              v
-        CSV Raw Data
-              |
-              +----> SQL Server 2025
-              |      Data quality, fraud analysis,
-              |      and financial reconciliation
-              |
-              +----> Azure Data Lake Storage Gen2
-              |      Bronze container (raw CSV)
-              |
-              v
-       Local Apache PySpark
-              |
-              v
-       Bronze Layer (Parquet)
-              |
-              v
-       Silver Layer (Cleaned Data)
-              |
-              v
-       Gold Layer (Business KPIs)
-              |
-              v
-       Data Quality Validation
-```
-
-*The Azure raw-data upload and local PySpark processing are separate parts of this project. The local Spark pipeline currently reads files from the project directory.*
-
-## Key Features
-
-- Synthetic banking data generation using Python
-- SQL Server data ingestion and SQL-based analysis
-- Azure Data Lake Storage Gen2 integration
-- Bronze, Silver, and Gold data transformations using PySpark
-- Transaction and payment reporting
-- High-value transaction review indicators
-- Automated pipeline execution using `Spark/run_pipeline.py`
-- Data quality and reconciliation checks
-
-## Pipeline Execution
-
-Run the complete local pipeline from the project root:
-
-```bash
+I used Databricks AI/BI Dashboards for reporting, so the project does not depend on Power BI.
+Completed Work
+1. Synthetic banking data and SQL Server
+- Generated five related CSV datasets with 132,700 records.
+- Loaded the datasets into SQL Server 2025 running in Docker (NovaBankDB).
+- Implemented SQL-based data quality checks, banking analysis, fraud-indicator queries, and financial reconciliation.
+- Used rule-based queries to flag potentially unusual activity for review.
+2. Azure Data Lake Storage Gen2
+- Provisioned the storage account stnovabankdev01 in Germany West Central.
+- Created bronze, silver, and gold containers.
+- Uploaded the five raw CSV files to the bronze/raw/ path.
+3. Azure Data Factory ingestion
+- Created the Azure Data Factory instance adf-novabank-dev02.
+- Built and successfully debugged the pipeline PL_NovaBank_Bronze_Ingestion.
+- Verified a copy of bronze/raw/transactions.csv to bronze/adf-output/transactions.csv.
+- Configured managed-identity-based access for the storage account.
+This ADF pipeline copies the transactions file. The other datasets were uploaded to ADLS separately, and Databricks processing was run independently.
+4. Local PySpark Medallion pipeline
+- Implemented local Bronze, Silver, and Gold processing.
+- Added data cleaning, reporting outputs, and data quality checks.
+- Created Spark/run_pipeline.py to run the local stages in sequence.
+- Successfully executed and validated the local pipeline.
+Run from the project root after setting up the project's local Python/Java environment:
 ./.venv-spark/bin/python Spark/run_pipeline.py
-```
+The local pipeline reads files from the project directory rather than directly from Azure Data Lake.
+5. Azure Databricks Medallion Architecture
+- Provisioned the Azure Databricks workspace dbw-novabank-dev01.
+- Connected Databricks to ADLS Gen2 using an Azure Databricks Access Connector and a dedicated Unity Catalog storage credential.
+- Processed 100,000 transactions through Bronze, Silver and Gold stages.
+- Validated data and prepared Gold reporting tables, including:
+  - dbw_novabank_dev01.novabank_gold.daily_transaction_summary
+  - dbw_novabank_dev01.novabank_gold.transaction_status_summary
+- Verified the status totals reconcile to the 100,000 source transactions.
+6. Databricks AI/BI Dashboard
+I built and published a Databricks AI/BI dashboard using the Gold tables. It brings together the transaction metrics and charts in one place.
+Dashboard visual	Result
+Total Transactions KPI	100,000
+Total Transaction Amount KPI	249.98M (displayed total; currencies not converted)
+Daily Transaction Volume	Line chart with daily transaction counts
+Transaction Status Breakdown	Bar chart by transaction status
 
-The pipeline runs Bronze ingestion, Silver transformations, Gold reporting, and data quality checks.
 
-**Validation result:** All checks passed in the completed local pipeline run.
-
-## Project Status
-
-**Completed:** Local Bronze–Silver–Gold pipeline, SQL analysis, Azure raw-data storage integration, automated execution, and validation.
-
-**Future enhancements:** Cloud orchestration, monitoring, and Power BI dashboards.
+Transaction status breakdown:
+Status	Transactions
+SETTLED	95,998
+DECLINED	2,991
+PENDING	1,011
+Total	100,000
 
 
 
+The dashboard stays private in Databricks. I included a screenshot here so the results can be viewed without workspace access.
+7. Testing and engineering practices
+- Ran SQL data checks and reconciliation queries.
+- Verified the local PySpark pipeline and its data quality checks.
+- Validated the Azure Data Factory copy activity and its output file.
+- Verified Databricks Gold reporting results.
+- Configured a GitHub Actions Python test workflow.
+- Used Azure managed identities and role assignments for cloud storage access.
+- Configured an Azure budget alert to help monitor cloud spending.
+What I Learned
+- How to move from raw CSV files to cleaned, analysis-ready Delta tables.
+- How to check record counts, missing IDs, duplicates, amounts, and dates before reporting.
+- How Azure Data Factory, ADLS Gen2, and Databricks fit into a data engineering workflow.
+- How to build useful charts and KPIs from Gold-layer tables.
+- How to use GitHub Actions, documentation, and Azure cost alerts alongside the technical work.
+Project Status
+Completed: Data generation, SQL Server analysis, local PySpark pipeline, ADLS Gen2 uploads, a tested ADF copy pipeline, Databricks Bronze/Silver/Gold tables, validation checks, and a published Databricks dashboard.
 
-Enterprise Banking Data Engineering Platform — NovaBank
-
-End-to-End Azure FinTech Data Engineering Portfolio Project
-A banking data engineering portfolio project demonstrating how synthetic financial data can be generated, validated, stored, transformed, orchestrated, and analysed using Python, SQL Server, Microsoft Azure, Databricks, PySpark, Delta Lake, Azure Data Factory, and Power BI.
-
-Project Status: In Development — local Python and SQL Server implementation is underway, with Azure cloud integration planned.
-
-1. Project Overview
-NovaBank is a fictional digital bank designed to simulate an enterprise banking data environment.
-
-The project focuses on building an end-to-end data engineering platform capable of processing banking datasets, including:
-
-Customer information
-Bank accounts
-Financial transactions
-Merchant information
-Payment records
-The platform aims to provide reliable data pipelines, high-quality financial data, automated processing, and business-ready datasets for reporting and analytics.
-
-All datasets are synthetically generated. No real customer or financial information is used.
-
-2. Business Problem
-Financial institutions process large volumes of data from multiple banking systems. This creates challenges involving data quality, integration, reconciliation, reporting, and operational reliability.
-
-The NovaBank platform is designed to address these challenges by:
-
-Integrating data from multiple banking datasets.
-Identifying missing, duplicate, and invalid records.
-Maintaining relationships between customers, accounts, and transactions.
-Reconciling payment and transaction information.
-Supporting financial reporting and customer activity analysis.
-Identifying potentially unusual transaction patterns.
-Automating and monitoring data processing pipelines.
-3. Technology Stack
-Technology	Purpose
-Python	Synthetic data generation, ETL and data validation
-CSV	Raw banking data storage
-SQL Server 2025	Relational database for banking datasets
-SQL Server Management Studio (SSMS)	Database management and SQL querying
-pyodbc	Connecting Python to SQL Server
-Azure Data Lake Storage Gen2	Scalable cloud data storage
-Azure Databricks	Distributed data processing and transformation
-PySpark	Large-scale data processing
-Delta Lake	Reliable data storage with ACID transactions
-Azure Data Factory	Data pipeline orchestration and scheduling
-Power BI	Financial reporting and interactive dashboards
-Git & GitHub	Version control and project documentation
-4. Data Architecture
-Current Local Architecture
-Synthetic Banking Data
-          |
-          v
-  Python Data Generator
-          |
-          v
-      CSV Files
-          |
-          v
- Python ETL & Validation
-          |
-          v
-    SQL Server 2025
-          |
-          v
-       NovaBankDB
-          |
-          v
- Customers | Accounts | Merchants
- Transactions | Payments
-          |
-          v
-   SQL Analysis & Reporting
-Planned Azure Architecture
-       Synthetic Data Sources
-                |
-                v
-        Azure Data Factory
-                |
-                v
-    Azure Data Lake Storage Gen2
-                |
-                v
-        BRONZE — Raw Data
-                |
-                v
-       Azure Databricks
-            PySpark
-                |
-                v
-       SILVER — Clean Data
-                |
-                v
-    Data Quality & Validation
-                |
-                v
-      GOLD — Business Data
-                |
-                v
-    Financial Analytics Models
-                |
-                v
-             Power BI
-The Azure implementation will follow the Medallion Architecture, consisting of three layers:
-
-Bronze Layer: Stores raw source data for traceability and reprocessing.
-
-Silver Layer: Contains cleaned, validated, standardised, and deduplicated data.
-
-Gold Layer: Provides business-ready datasets for financial analytics, reconciliation, and reporting.
-
-5. Synthetic Banking Datasets
-The project uses five related synthetic datasets.
-
-Dataset	Target Records	Description
-Customers	1,000	Fictional customer profiles
-Accounts	1,500	Customer-linked bank accounts
-Merchants	200	Fictional merchant records
-Transactions	100,000	Credit and debit transactions
-Payments	30,000	Payment records linked to transactions
-Total	132,700	Synthetic records
-The record counts represent the configured data generation targets and are verified during the loading process.
-
-Database Relationships
-One customer can own multiple accounts.
-One account can contain multiple transactions.
-One merchant can be associated with multiple transactions.
-A transaction may have an associated payment record.
-SQL Server primary keys and foreign keys are used to maintain relational integrity.
-
-6. Project Folder Structure
-FinTechProject/
-│
-├── data/
-│   ├── raw/
-│   │   ├── customers.csv
-│   │   ├── accounts.csv
-│   │   ├── merchants.csv
-│   │   ├── transactions.csv
-│   │   └── payments.csv
-│   ├── processed/
-│   └── test_data/
-│
-├── python/
-│   ├── data_generator.py
-│   ├── test_sql_connection.py
-│   └── database_loader_sqlserver.py
-│
-├── sql/
-│   ├── schema/
-│   │   └── create_tables_sqlserver.sql
-│   └── queries/
-│
-├── databricks/
-│   ├── bronze/
-│   ├── silver/
-│   └── gold/
-│
-├── data_factory/
-├── powerbi/
-├── tests/
-├── docs/
-│
-├── README.md
-└── .gitignore
-This represents the intended repository structure. Additional files will be added as the project progresses.
-
-7. Local Environment Setup
-Prerequisites
-Python 3.x
-Visual Studio Code
-SQL Server 2025
-SQL Server Management Studio
-Microsoft ODBC Driver 17 or 18 for SQL Server
-Git
-Step 1 — Clone the repository
-git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
-cd YOUR_REPOSITORY
-Replace the placeholders with your repository details once published.
-
-Step 2 — Install Python dependencies
-python -m pip install pyodbc
-Step 3 — Generate synthetic banking datasets
-python python/data_generator.py
-The generator produces CSV files in the data/raw/ directory.
-
-Step 4 — Create the SQL Server database
-Open SSMS and connect to the local SQL Server instance.
-
-Execute the database schema script:
-
-sql/schema/create_tables_sqlserver.sql
-The script creates the NovaBankDB database and five relational tables.
-
-Step 5 — Test the database connection
-python python/test_sql_connection.py
-The local connection uses Windows authentication.
-
-Step 6 — Load the banking datasets
-python python/database_loader_sqlserver.py
-The loader imports synthetic banking records into SQL Server.
-
-Before rerunning the loader, verify existing records to avoid duplicate primary-key errors.
-
-8. Data Quality Framework
-The platform will implement data quality rules to identify:
-
-Missing customer or account identifiers.
-Duplicate transaction IDs.
-Invalid transaction types.
-Negative or zero transaction amounts.
-Invalid date formats.
-Broken foreign-key relationships.
-Invalid transaction statuses.
-Payment and transaction inconsistencies.
-Data quality checks will be applied during ingestion and transformation, with exceptions recorded for investigation.
-
-9. Financial Reconciliation
-Financial reconciliation is an important component of banking data engineering.
-
-The planned reconciliation framework will include:
-
-Transaction-to-payment matching.
-Missing payment identification.
-Payment status comparison.
-Transaction count reconciliation.
-Financial amount reconciliation.
-Source-to-target record count validation.
-Detection of unexpected financial differences.
-Financial reporting will distinguish completed transactions from declined and pending activity.
-
-10. Fraud-Indicator Analysis
-The project will implement rule-based indicators for potentially unusual banking activity.
-
-Examples include:
-
-High-value transactions.
-Repeated transactions within short time intervals.
-Unusually high transaction frequency.
-Sudden changes in transaction amounts.
-Unexpected account activity patterns.
-These rules provide analytical indicators only and do not establish that fraud has occurred.
-
-11. Power BI Reporting
-The planned Power BI dashboards will provide insights into:
-
-Total settled transaction value.
-Credit and debit activity.
-Monthly transaction trends.
-Transaction status distribution.
-Customer and account activity.
-Merchant transaction performance.
-Data quality metrics.
-Reconciliation exceptions.
-Fraud-indicator trends.
-The reporting layer will use curated Gold datasets from the data platform.
-
-12. Testing and Validation
-The project will include testing for:
-
-Synthetic data generation.
-CSV structure and required fields.
-Duplicate record detection.
-SQL primary-key and foreign-key integrity.
-Transaction amount calculations.
-Source-to-target record counts.
-Data transformation logic.
-Financial reconciliation accuracy.
-Pipeline rerun behaviour.
-13. Security and Cost Management
-The project follows several security and cost-management principles:
-
-Use synthetic banking data exclusively.
-Do not store passwords or access keys in source code.
-Exclude secrets and local environment files from GitHub.
-Apply least-privilege access to cloud resources.
-Review Azure pricing before provisioning resources.
-Configure Azure budgets and cost alerts before using chargeable services.
-Stop unused cloud compute resources.
-Monitor pipeline activity and operational failures.
-14. Project Development Roadmap
-Python fundamentals and CSV processing.
-Generate synthetic banking datasets.
-Create SQL Server database and relational tables.
-Complete automated loading of all five banking datasets.
-Develop advanced SQL financial analysis.
-Learn Azure fundamentals and cost controls.
-Configure Azure Data Lake Storage Gen2.
-Implement Bronze ingestion using Databricks.
-Develop Silver transformations with PySpark.
-Build Gold datasets using Delta Lake.
-Implement automated data quality checks.
-Develop financial reconciliation pipelines.
-Implement fraud-indicator rules.
-Orchestrate data pipelines using Azure Data Factory.
-Configure security and monitoring.
-Build Power BI dashboards.
-Add automated testing and documentation.
-Publish final architecture and project demonstration.
-15. Data Engineering Skills Demonstrated
-Python and ETL: Data generation, CSV processing, validation, automation, and error handling.
-
-SQL and Database Design: Relational modelling, primary keys, foreign keys, joins, aggregations, and financial reporting.
-
-Azure Data Engineering: Data Lake Storage, Databricks, PySpark, Delta Lake, and Azure Data Factory.
-
-Data Reliability: Data quality, reconciliation, testing, and pipeline monitoring.
-
-Business Intelligence: Financial analytics, reporting models, and Power BI dashboards.
-
-Engineering Practices: Git, GitHub, documentation, security, and cloud cost management.
-
-16. Future Enhancements
-Potential future improvements include:
-
-Incremental data ingestion.
-Change Data Capture (CDC).
-Slowly Changing Dimensions (SCD).
-Automated monitoring and alerts.
-CI/CD pipelines.
-Advanced anomaly detection.
-Additional synthetic banking products and data sources.
-17. Disclaimer
-NovaBank is a fictional banking organisation created solely for educational and portfolio purposes.
-
-All customer, account, merchant, transaction, and payment data is synthetic.
-
-The project is not affiliated with a real financial institution and is not intended for production banking operations.
-
-Project Name: Enterprise Banking Data Engineering Platform
-Fictional Organisation: NovaBank
-Domain: Financial Services / FinTech
-Focus: Azure Data Engineering, Python, SQL Server, PySpark, Delta Lake, Data Quality and Financial Analytics
+Still to explore: Connecting ADF and Databricks into a scheduled pipeline, adding monitoring, and extending the dashboard.
+Future Enhancements
+- Orchestrate Databricks notebooks from Azure Data Factory and schedule incremental ingestion.
+- Add stronger operational monitoring, alerts, and pipeline retry logic.
+- Implement Change Data Capture (CDC), incremental processing, and Slowly Changing Dimensions (SCD).
+- Add deployment automation for Azure infrastructure and Databricks assets.
+- Add currency-aware financial reporting and additional customer, merchant, and payment dashboards.
+- Explore Power BI if an appropriate organizational account becomes available.
+Security and Cost
+- All banking records are synthetic.
+- Do not commit secrets, passwords, access keys, or local environment files.
+- Use managed identities and least-privilege access where possible.
+- Databricks SQL/serverless compute and other Azure resources may incur charges; budget alerts notify but do not automatically stop spending.
+- The published dashboard is not publicly accessible by default; the repository screenshot provides a portfolio preview.
